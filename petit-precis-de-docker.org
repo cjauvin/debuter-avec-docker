@@ -69,15 +69,21 @@ Docker.
 
 ** Quel problème ça résout?
 
-Le problème de la gestion des dépendances logicielles est un des plus
-épineux qui soit. Quiconque a déjà joué avec un ~virtualenv~, un
-environnement Conda pour Python, ou l'équivalent pour un autre
-langage, en sait probablement quelque chose, ou a une opinion à ce
-sujet. Docker permet de résoudre ce problème d'une manière assez
-radicale, en permettant de créer et distribuer un environnement dans
-sa totalité, en sacrifiant un minimum de performance. L'analogie avec
-un container de transport maritime est particulièrement bonne dans ce
-sens d'ailleurs.
+Une application moderne repose typiquement sur une tour de Babel
+impressionnante de composantes et de dépendances logicielles qu'il est
+pratiquement impossible de contrôler dans ses moindres détails :
+peut-être que votre environnement Conda contient exactement les mêmes
+versions des librairies Python que le mien, mais il est toujours
+possible qu'il subsiste une différence subtile dans une des
+composantes se trouvant dans les profondeurs du système
+d'exploitation, susceptible de causer des problèmes difficiles à
+diagnostiquer et résoudre. Docker permet de résoudre ce problème d'une
+manière assez radicale, en permettant de créer, reproduire et
+distribuer un environnement dans sa totalité, en sacrifiant un minimum
+de performance. La métaphore du container de transport maritime prend
+ainsi son sens, car il permet de résoudre un problème apparenté dans
+le monde physique : rendre plus robuste le transport des choses
+fragiles en les comportimentant.
 
 ** De où ça vient?
 
@@ -95,13 +101,13 @@ travail :
 
 #+attr_latex: :options frame=single
 #+begin_src text
-$ mkdir 01_hello
-$ cd 01_hello
+$ mkdir hello
+$ cd hello
 #+end_src
 
 Créons ensuite un petit programme simple, ~say_hello.py~ :
 
-#+caption: \texttt{01\_hello/say\_hello.py}
+#+caption: \texttt{hello/say\_hello.py}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
 #+begin_src python
 import sys
@@ -126,7 +132,7 @@ créant tout d'abord une image Docker, que l'on pourra exécuter ensuite
 en tant que container. L'image est définie par un fichier spécial
 nommé ~Dockerfile~, qui contient les instructions pour sa création :
 
-#+caption: \texttt{01\_hello/Dockerfile.py}
+#+caption: \texttt{hello/Dockerfile}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
 #+begin_src dockerfile
 FROM python
@@ -142,18 +148,21 @@ L'instruction ~FROM~ spécifie le nom de l'image (nommée ~python~) de
 laquelle notre propre image hérite (ou dérive), publiée sur Docker
 Hub, un répertoire public d'images Docker. Dans ce cas particulier il
 s'agit d'une image officielle, associée à un projet GitHub. Si on
-consulte ce projet, on peut y trouver un [[https://github.com/docker-library/python/blob/master/3.10/buster/Dockerfile][Dockerfile]] (pour une version
-particulière de Python), qui contient lui-même une instruction [[https://github.com/docker-library/python/blob/9242c448c7e50d5671e53a393fc2c464683f35dd/3.10/buster/Dockerfile#L7][FROM]],
-pointant vers une autre image en amont, ce qui démontre l'aspect
-modulaire (et récursif) de cette technologie.
+consulte ce projet, on peut y trouver un [[https://github.com/docker-library/python/blob/master/3.10/buster/Dockerfile][Dockerfile]] (dans ce cas pour
+la version 3.10 de Python), qui contient lui-même une instruction
+[[https://github.com/docker-library/python/blob/9242c448c7e50d5671e53a393fc2c464683f35dd/3.10/buster/Dockerfile#L7][FROM]], pointant vers une autre image en amont (~buildpack-deps~), ce
+qui démontre l'aspect modulaire (et récursif) de Docker.
 
-L'instruction ~COPY~ crée une copie de notre fichier à l'intérieur du
-système de fichiers de l'image, à l'emplacement désigné. Les deux autres
-instructions seront expliquées dans un meilleur contexte plus loin.
+L'instruction ~COPY~ crée une copie de notre programme à /l'intérieur/
+du système de fichiers de l'image, à l'emplacement désigné
+(`/inside_container` est un répertoire qui n'existera que dans le
+container, quand il sera créé). Les deux autres instructions seront
+expliquées dans un contexte plus pertinent plus loin.
 
 ** Création de l'image : docker build
 
-Pour créer notre image, qu'on nommera ~hello~ :
+Pour créer notre image, qu'on nommera ~hello~, la commande ~build~
+prend en entrée notre ~Dockerfile~ :
 
 #+attr_latex: :options frame=single
 #+begin_src text
@@ -174,7 +183,8 @@ Successfully built 3bfd9d7c3faf
 Successfully tagged hello:latest
 #+end_src
 
-On peut vérifier sa présence en utilisant ~docker images~ :
+On peut vérifier la présence de la nouvelle image en utilisant ~docker
+images~ :
 
 #+attr_latex: :options frame=single
 #+begin_src text
@@ -187,10 +197,10 @@ hello           latest    3bfd9d7c3faf   25 hours ago   886MB
 
 Une fois qu'une image existe, on peut en instancier un container à
 volonté. Étant donné que notre premier exemple est celui d'un
-programme en ligne de commande (CLI), le cycle de vie de notre container
-sera bref : il sera créé, sa commande (définie par le ~ENTRYPOINT~
-dans le ~Dockerfile~) sera exécutée, et il sera ensuite arrêté. La commande
-~docker run <image> [args]~ permet de le faire :
+programme en ligne de commande (CLI), le cycle de vie de notre
+container sera bref : il sera créé, sa commande (définie par le
+~ENTRYPOINT~ dans le ~Dockerfile~) sera exécutée, et il sera ensuite
+arrêté. La commande ~docker run <image> [args]~ permet de le faire :
 
 #+attr_latex: :options frame=single
 #+begin_src bash
@@ -200,10 +210,10 @@ $ docker run hello Ouranos
 Hello Ouranos!
 #+end_src
 
-Qu'est-ce qui se passerait si on ajoutait une dépendance Python à
+Qu'est-ce qui se passerait si on voulait ajouter une dépendance Python à
 notre programme? Essayons avec une simple modification :
 
-#+caption: \texttt{01\_hello/say\_hello.py}
+#+caption: \texttt{hello/say\_hello.py}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
 #+begin_src python
 import sys
@@ -223,12 +233,12 @@ Traceback (most recent call last):
 ModuleNotFoundError: No module named 'cowsay'
 #+end_src
 
-Installer le module localement n'aurait aucun effet, car le problème
-est au niveau de l'image, qui doit être reconstruite de manière à
-inclure cette dépendance. Il est facile de le faire en modifiant le
-~Dockerfile~, à l'aide de la commande ~RUN~ :
+Installer le module localement (avec ~pip~) n'aurait aucun effet, car
+le problème est au niveau de l'image, qui doit être reconstruite de
+manière à inclure cette dépendance. Il est facile de le faire en
+modifiant le ~Dockerfile~, à l'aide de la commande ~RUN~ :
 
-#+caption: \texttt{01\_hello/Dockerfile.py}
+#+caption: \texttt{hello/Dockerfile.py}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
 #+begin_src dockerfile
 FROM python
