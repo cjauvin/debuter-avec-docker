@@ -1,7 +1,8 @@
 #+LANGUAGE: fr
 #+OPTIONS: title:nil toc:nil
+#+LATEX_HEADER: \usepackage[margin=1.7in]{geometry}
+#+LATEX_HEADER: \setlength\parindent{0pt}
 #+LATEX_HEADER: \renewcommand{\listingscaption}{Fichier}
-#+LATEX: \setlength\parindent{0pt}
 
 #+BEGIN_EXPORT latex
 \begin{titlepage}
@@ -15,7 +16,6 @@
 {\large Version alpha, 29 octobre 2021 \par}
 \end{center}
 \end{titlepage}
-
 \tableofcontents
 \clearpage
 #+END_EXPORT
@@ -24,9 +24,9 @@
 
 Dans la première section j'explique brièvement ce qu'est Docker, et la
 nature du problème que c'est censé résoudre. Pour expliquer son
-fonctionnement plus en profondeur, je présente un scénario fictif mais
-réaliste, qui permet d'explorer et relier progressivement les
-différents concepts et outils en un tout cohérent, exposé dans la
+fonctionnement plus en profondeur, je présente ensuite un scénario
+fictif mais réaliste, qui permet d'explorer et relier progressivement
+les différents concepts et outils en un tout cohérent, exposé dans la
 deuxième section.
 
 * Réponses à quelques questions de base
@@ -35,9 +35,9 @@ deuxième section.
 
 Docker est un programme qui permet de packager [fn:1] une application
 ainsi que la totalité de son environnement dans un fichier spécial (et
-en général assez volumineux), appelé une ~image~. Une fois que cette
+en général assez volumineux), appelé une *image*. Une fois que cette
 image a été créée, Docker permet d'exécuter une instance dynamique à
-partir de celle-ci, sous la forme d'un ~container~. Un container
+partir de celle-ci, sous la forme d'un *container*. Un container
 constitue par défaut un environnement complètement isolé (du système
 d'exploitation "hôte", qui exécute Docker, ainsi que des autres
 containers) en ce qui a trait en particulier au disque et au réseau,
@@ -114,7 +114,7 @@ print(f'Hello {name}!')
 On peut tout d'abord vérifier que notre application fonctionne localement :
 
 #+attr_latex: :options frame=single
-#+begin_src bash
+#+begin_src text
 $ python say_hello.py
 Hello Stranger!
 $ python say_hello.py Ouranos
@@ -156,7 +156,7 @@ instructions seront expliquées dans un meilleur contexte plus loin.
 Pour créer notre image, qu'on nommera ~hello~ :
 
 #+attr_latex: :options frame=single
-#+begin_src bash
+#+begin_src text
 $ docker build . -t hello
 Sending build context to Docker daemon  3.072kB
 Step 1/4 : FROM python
@@ -177,7 +177,7 @@ Successfully tagged hello:latest
 On peut vérifier sa présence en utilisant ~docker images~ :
 
 #+attr_latex: :options frame=single
-#+begin_src bash
+#+begin_src text
 $ docker images
 REPOSITORY      TAG       IMAGE ID       CREATED        SIZE
 hello           latest    3bfd9d7c3faf   25 hours ago   886MB
