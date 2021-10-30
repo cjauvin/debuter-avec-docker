@@ -1,0 +1,260 @@
+#+LANGUAGE: fr
+#+OPTIONS: title:nil toc:nil
+#+LATEX_HEADER: \renewcommand{\listingscaption}{Fichier}
+#+LATEX: \setlength\parindent{0pt}
+
+#+BEGIN_EXPORT latex
+\begin{titlepage}
+\begin{center}
+{\huge Petit précis de Docker \par}
+\vspace{1cm}
+{\Large Un manuel pour apprendre rapidement ses concepts importants à l'aide d'un scénario progressif \par}
+\vspace{10cm}
+{\Large Rédigé par Christian Jauvin, chez Ouranos \par}
+\vspace{1cm}
+{\large Version alpha, 29 octobre 2021 \par}
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+#+END_EXPORT
+
+* Structure de ce document
+
+Dans la première section j'explique brièvement ce qu'est Docker, et la
+nature du problème que c'est censé résoudre. Pour expliquer son
+fonctionnement plus en profondeur, je présente un scénario fictif mais
+réaliste, qui permet d'explorer et relier progressivement les
+différents concepts et outils en un tout cohérent, exposé dans la
+deuxième section.
+
+* Réponses à quelques questions de base
+
+** Qu'est-ce que c'est?
+
+Docker est un programme qui permet de packager [fn:1] une application
+ainsi que la totalité de son environnement dans un fichier spécial (et
+en général assez volumineux), appelé une ~image~. Une fois que cette
+image a été créée, Docker permet d'exécuter une instance dynamique à
+partir de celle-ci, sous la forme d'un ~container~. Un container
+constitue par défaut un environnement complètement isolé (du système
+d'exploitation "hôte", qui exécute Docker, ainsi que des autres
+containers) en ce qui a trait en particulier au disque et au réseau,
+mais il existe de nombreux mécanismes pour établir des liens entre les
+différentes composantes, pour des usages flexibles et variés.
+
+[fn:1] J'utilise des termes anglais (par ex. "packager") quand il
+m'apparait utile de le faire, c'est-à-dire que le terme traduit serait
+à mon avis susceptible d'obscurcir le sens de ce que je veux
+expliquer. Le code des exemples est également en anglais, pour éviter
+les mélanges étranges.
+
+** En quoi ça diffère d'une VM?
+
+Bien que ce modèle ressemble à celui d'une machine virtuelle (VM), il
+est assez différent : au lieu de faire l'émulation complète d'une
+machine physique, comme c'est le cas avec les VMs du genre VMWare ou
+VirtualBox, Docker partage plutôt le système d'exploitation hôte, en
+utilisant ses primitives de virtualisation.  Cette différence fait en
+sorte que Docker est beaucoup moins gourmand en ressources qu'une VM,
+et permet donc de meilleures performances. Bien que Docker soit
+disponible sur toutes les plateformes, il ne peut rouler nativement
+que sur Linux (originalement) et Windows (plus récemment, et moins
+typiquement). Sous MacOS, une couche de virtualisation supplémentaire
+est nécessaire. Bien que cette couche (basée sur une VM traditionnele)
+soit complètement transparente pour l'usager de MacOS, elle fait tout
+de même en sorte de réduire un peu la performance d'une application
+Docker.
+
+** Quel problème ça résout?
+
+Le problème de la gestion des dépendances logicielles est un des plus
+épineux qui soit. Quiconque a déjà joué avec un ~virtualenv~, un
+environnement Conda pour Python, ou l'équivalent pour un autre
+langage, en sait probablement quelque chose, ou a une opinion à ce
+sujet. Docker permet de résoudre ce problème d'une manière assez
+radicale, en permettant de créer et distribuer un environnement dans
+sa totalité, en sacrifiant un minimum de performance. L'analogie avec
+un container de transport maritime est particulièrement bonne dans ce
+sens d'ailleurs.
+
+** De où ça vient?
+
+Bien que Docker soit un projet open source, il a été créé et est
+développé dans le contexte d'une entreprise à but lucratif (Docker
+Inc), qui offre des services de type "entreprise".
+
+* Scénario progressif
+
+** Définition d'une image : Dockerfile
+
+Supposons que nous voulions créer une petite application Python qui
+effectue une tâche très simple. Tout d'abord créons un répertoire de
+travail :
+
+#+attr_latex: :options frame=single
+#+begin_src text
+$ mkdir 01_hello
+$ cd 01_hello
+#+end_src
+
+Créons ensuite un petit programme simple, ~say_hello.py~ :
+
+#+caption: \texttt{01\_hello/say\_hello.py}
+#+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
+#+begin_src python
+import sys
+
+name = sys.argv[1] if len(sys.argv) > 1 else 'Stranger'
+
+print(f'Hello {name}!')
+#+end_src
+
+On peut tout d'abord vérifier que notre application fonctionne localement :
+
+#+attr_latex: :options frame=single
+#+begin_src bash
+$ python say_hello.py
+Hello Stranger!
+$ python say_hello.py Ouranos
+Hello Ouranos!
+#+end_src
+
+On peut maintenant "dockeriser" (ou "dockerifier"?) notre programme en
+créant tout d'abord une image Docker, que l'on pourra exécuter ensuite
+en tant que container. L'image est définie par un fichier spécial
+nommé ~Dockerfile~, qui contient les instructions pour sa création :
+
+#+caption: \texttt{01\_hello/Dockerfile.py}
+#+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
+#+begin_src dockerfile
+FROM python
+
+COPY say_hello.py /inside_container/
+
+WORKDIR /inside_container
+
+ENTRYPOINT ["python", "say_hello.py"]
+#+end_src
+
+L'instruction ~FROM~ spécifie le nom de l'image (nommée ~python~) de
+laquelle notre propre image hérite (ou dérive), publiée sur Docker
+Hub, un répertoire public d'images Docker. Dans ce cas particulier il
+s'agit d'une image officielle, associée à un projet GitHub. Si on
+consulte ce projet, on peut y trouver un [[https://github.com/docker-library/python/blob/master/3.10/buster/Dockerfile][Dockerfile]] (pour une version
+particulière de Python), qui contient lui-même une instruction [[https://github.com/docker-library/python/blob/9242c448c7e50d5671e53a393fc2c464683f35dd/3.10/buster/Dockerfile#L7][FROM]],
+pointant vers une autre image en amont, ce qui démontre l'aspect
+modulaire (et récursif) de cette technologie.
+
+L'instruction ~COPY~ crée une copie de notre fichier à l'intérieur du
+système de fichiers de l'image, à l'emplacement désigné. Les deux autres
+instructions seront expliquées dans un meilleur contexte plus loin.
+
+** Création de l'image : docker build
+
+Pour créer notre image, qu'on nommera ~hello~ :
+
+#+attr_latex: :options frame=single
+#+begin_src bash
+$ docker build . -t hello
+Sending build context to Docker daemon  3.072kB
+Step 1/4 : FROM python
+ ---> cba42c28d9b8
+Step 2/4 : COPY say_hello.py /inside_container/
+ ---> Using cache
+ ---> c010445e0929
+Step 3/4 : WORKDIR /inside_container
+ ---> Using cache
+ ---> 4c84d350ca46
+Step 4/4 : ENTRYPOINT ["python", "say_hello.py"]
+ ---> Using cache
+ ---> 3bfd9d7c3faf
+Successfully built 3bfd9d7c3faf
+Successfully tagged hello:latest
+#+end_src
+
+On peut vérifier sa présence en utilisant ~docker images~ :
+
+#+attr_latex: :options frame=single
+#+begin_src bash
+$ docker images
+REPOSITORY      TAG       IMAGE ID       CREATED        SIZE
+hello           latest    3bfd9d7c3faf   25 hours ago   886MB
+#+end_src
+
+** Création d'un container : docker run
+
+Une fois qu'une image existe, on peut en instancier un container à
+volonté. Étant donné que notre premier exemple est celui d'un
+programme en ligne de commande (CLI), le cycle de vie de notre container
+sera bref : il sera créé, sa commande (définie par le ~ENTRYPOINT~
+dans le ~Dockerfile~) sera exécutée, et il sera ensuite arrêté. La commande
+~docker run <image> [args]~ permet de le faire :
+
+#+attr_latex: :options frame=single
+#+begin_src bash
+$ docker run hello
+Hello Stranger!
+$ docker run hello Ouranos
+Hello Ouranos!
+#+end_src
+
+Qu'est-ce qui se passerait si on ajoutait une dépendance Python à
+notre programme? Essayons avec une simple modification :
+
+#+caption: \texttt{01\_hello/say\_hello.py}
+#+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
+#+begin_src python
+import sys
+import cowsay
+
+name = sys.argv[1] if len(sys.argv) > 1 else 'stranger'
+
+cowsay.cow(f'Hello {name}!')
+#+end_src
+
+#+attr_latex: :options frame=single
+#+begin_src text
+$ docker run hello Ouranos
+Traceback (most recent call last):
+  File "/inside_container/say_hello_cow.py", line 2, in <module>
+    import cowsay
+ModuleNotFoundError: No module named 'cowsay'
+#+end_src
+
+Installer le module localement n'aurait aucun effet, car le problème
+est au niveau de l'image, qui doit être reconstruite de manière à
+inclure cette dépendance. Il est facile de le faire en modifiant le
+~Dockerfile~, à l'aide de la commande ~RUN~ :
+
+#+caption: \texttt{01\_hello/Dockerfile.py}
+#+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
+#+begin_src dockerfile
+FROM python
+
+RUN pip install cowsay
+
+COPY say_hello.py /inside_container/
+
+WORKDIR /inside_container
+
+ENTRYPOINT ["python", "say_hello.py"]
+#+end_src
+
+Il faut ensuite reconstruire l'image, que l'on peut nommer ~hello-cow~
+pour la distinguer de la précédente :
+
+** Volume partagé
+
+Supposons que nous voulions maintenant faire une modification à notre
+programme Python, pour en changer le comportement. Si on modifie le
+code du fichier local (~say_hello.py~), cela n'aura aucun effet sur le
+container, car le fichier, dans son état initial au moment de la
+création de l'image, fait partie intégrante de celle-ci. La seule
+manière de le faire serait de reconstruire l'image, ce qui pourrait
+s'avérer coûteux. Dans un contexte de développement, le mécanisme de
+
+** Réseau
+
+** docker-compose
