@@ -1,0 +1,16 @@
+services:
+
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8080:5000"
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: main
+    working_dir: /app
+    command: "flask run --host 0.0.0.0"
+
+  db:
+    image: redis
