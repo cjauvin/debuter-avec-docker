@@ -1,7 +1,5 @@
 FROM python
 
-RUN pip install cowsay
-
 COPY say_hello.py /inside_container/
 
 WORKDIR /inside_container

@@ -13,7 +13,7 @@
 \vspace{10cm}
 {\Large Christian Jauvin, Ouranos \par}
 \vspace{1cm}
-{\large Version alpha, le 3 novembre 2021 \par}
+{\large Version alpha, le 4 novembre 2021 \par}
 \end{center}
 \end{titlepage}
 \tableofcontents
@@ -76,7 +76,14 @@ distribuer un environnement dans sa totalité, en sacrifiant un minimum
 de performance. La métaphore du container de transport maritime prend
 ainsi son sens, car il permet de résoudre un problème apparenté dans
 le monde physique : rendre plus robuste le transport des choses
-fragiles en les compartimentant.
+fragiles en les compartimentant.\\
+
+En pratique, Docker est pratique et puissant dans deux scénarios
+distincts : quand une application complexe doit être déployée et gérée
+en production, et quand un développeur veut reproduire un
+environnement complexe (celui de production par exemple) localement,
+sans avoir à installer et gérer une multitude de composantes complexes
+sur le système hôte.
 
 ** De où ça vient?
 
@@ -86,7 +93,7 @@ Inc), qui offre des services de type "entreprise".
 
 * Comment l'utiliser
 
-** Définition d'une image : Dockerfile
+** Définir une image : Dockerfile
 
 Supposons que nous voulions créer un petit outil Python qui
 effectue une tâche très simple, avec la ligne de commande. Créons tout
@@ -155,7 +162,7 @@ courant qui sera utilisé par la commande suivante ~ENTRYPOINT~, qui
 détermine la ligne de commande qui sera utilisée par défaut quand
 le container sera exécuté.
 
-** Création de l'image : docker build
+** Créer une image : docker build
 
 Pour créer notre image, qu'on nommera ~hello~, la commande ~build~
 prend en entrée notre ~Dockerfile~ :
@@ -189,7 +196,7 @@ REPOSITORY      TAG       IMAGE ID       CREATED        SIZE
 hello           latest    3bfd9d7c3faf   25 hours ago   886MB
 #+end_src
 
-** Création d'un container : docker run
+** Créer et démarrer un container : docker run
 
 Une fois qu'une image existe, on peut en instancier un container à
 volonté. Étant donné que notre premier exemple est celui d'un
@@ -296,7 +303,7 @@ $ docker run hello-cow Ouranos
                      ||     ||
 #+end_src
 
-** Volume partagé
+** Partager un répertoire (volume) avec l'hôte
 
 Dans l'exemple précédent, comme la modification à notre programme
 impliquait l'ajout d'une librairie, la modification de l'image était
@@ -350,15 +357,16 @@ l'hôte qu'on veut partager (déterminé ici dynamiquement avec la
 commande Bash ~pwd~), à droite l'endroit correspondant, dans le
 container.
 
-** Plusieurs containers : docker-compose
+** Gérer un groupe de containers : docker-compose
 
 Nous allons maintenant décrire un scénario où nous voulons créer une
 application qui nécessite plusieurs containers. L'outil
 ~docker-compose~ permet de créer et orchestrer un groupe de containers
-de manière très puissante et conviviale, toujours sur la ligne de
-commande. Docker-compose ne remplace pas l'outil Docker tout court, il
-en enrichit seulement l'interface : tout ce que fait docker-compose
-pourrait être accompli avec Docker seulement.\\
+de manière très puissante et conviviale, toujours avec la ligne de
+commande, à l'aide d'un seul fichier de configuration. Docker-compose
+ne remplace pas l'outil Docker tout court, il en enrichit seulement
+l'interface : tout ce que fait docker-compose pourrait être accompli
+avec Docker seulement.\\
 
 Créons un nouveau répertoire de travail :
 
@@ -368,10 +376,19 @@ $ mkdir
 $ cd app
 #+end_src
 
-Comme notre application utilise Flask, un framework web pour Python,
-et Redis, une base de données de type "key/value" (dont le rôle est
-simplement d'associer une valeur quelconque à une clé), notre
-~Dockerfile~ est :
+Notre application est constituée de deux serveurs : un serveur
+/applicatif/, écrit en Python avec Flask, un framework web. L'autre
+est basé sur Redis, une base de données de type "key/value" (dont le
+rôle est simplement d'associer une valeur quelconque à une clé). Étant
+donné qu'il s'agit ici d'un /service/, censé fonctionner de manière
+continue, sans interruption, le comportement des containers sera
+différent de celui de l'utilitaire que nous avons créé dans la section
+précédente, dont la durée de vie était très courte. Dans ce scénario
+on veut démarrer des containers qui vont rouler jusqu'à nouvel ordre,
+quand on décidera de les terminer explicitement.\\
+
+Voici tout d'abord le ~Dockerfile~ pour l'application Flask, encore
+une fois basée sur une image ~python~ officielle :
 
 #+caption: \texttt{app/Dockerfile}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
@@ -381,8 +398,7 @@ FROM python
 RUN pip install flask redis
 #+end_src
 
-Notre application elle-même est entièrement contenue dans le fichier
-~main.py~ :
+Cette application est entièrement contenue dans le fichier ~main.py~ :
 
 #+caption: \texttt{app/main.py}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
@@ -408,7 +424,7 @@ def get_value():
     return f"Your stored value is {val}"
 #+end_src
 
-Cette application web définit deux routes : ~/set/<val>~, qui associe
+Notre application web définit deux routes : ~/set/<val>~, qui associe
 une valeur à une clé Redis (par exemple ~/set/123~, qui associe ~123~
 à la clé ~some_key~) et ~/get~, qui la retourne.\\
 
@@ -443,9 +459,12 @@ la clé ~services.web.build~.\\
 
 La clé ~db~ correspond à un deuxième container qui ne nécessite aucune
 phase de build (donc de ~Dockerfile~) car nous utilisons l'image
-officielle, ~redis~, telle quelle.\\
+officielle, ~redis~, telle quelle, sans modification particulière.\\
 
-On peut maintenant démarrer notre application avec la commande ~up~ :
+On peut maintenant démarrer notre application avec la commande
+~docker-compose up~, qui est un amalgame des commandes ~docker build~
+et ~docker run~, opérant dans le contexte du groupe d'images et de
+containers défini par le fichier YAML :
 
 #+attr_latex: :options frame=single
 #+begin_src text
@@ -464,9 +483,9 @@ Creating app_web_1 ... done
 Creating app_db_1  ... done
 #+end_src
 
-Une fois les images téléchargées ou construites, les deux containers
-de l'application sont démarrés en "background" comme on peut le
-constater en utilisant la commande ~ps~ :
+Le fait d'avoir utlisé l'option ~-d~ fait en sorte que les deux
+containers de l'application sont démarrés en "background", comme on
+peut le constater en utilisant la commande ~docker-compose ps~ :
 
 #+attr_latex: :options frame=single
 #+begin_src text
@@ -478,9 +497,9 @@ app_web_1 flask run --host ...  Up     0.0.0.0:8080->5000/tcp
 #+end_src
 
 On remarque tout d'abord que le container ~web~ exécute la commande
-spécifiée dans le fichier YAML (~services.web.command~), tandis que le
-container ~db~ exécute une commande par défaut définie dans l'image
-~redis~. La comportement de la commande ~flask run~ est également
+~flask run~, spécifiée dans le fichier YAML (~services.web.command~),
+tandis que le container ~db~ exécute une commande par défaut définie
+dans l'image ~redis~. La comportement de la commande ~flask run~ est
 modulé par la valeur de certaines variables d'environnement propres à
 Flask, également définies dans le fichier de configuration
 (~services.web.environment~). Un volume partagé
@@ -505,7 +524,8 @@ vers le port 8080 de l'hôte. Sans cette configuration, le URL
 ~web:5000~ serait /seulement/ accessible au container ~redis~,
 complètement isolé de l'extérieur donc.\\
 
-Il est facile de tester ce mécanisme :
+Il est facile de tester ce mécanisme avec un outil local (présent sur
+l'hôte), comme un navigateur ou ~curl~ :
 
 #+attr_latex: :options frame=single
 #+begin_src text
@@ -513,4 +533,50 @@ $ curl localhost:8080/set/hello
 Your value (hello) is now set in the database
 $ curl localhost:8080/get
 Your stored value is b'hello'
+#+end_src
+
+** Exécuter un programme dans un container en marche : docker-compose exec
+
+Comme les containers de notre service roulent de manière continue, en
+attente de servir des requêtes, il est possible d'exécuter un
+programme dans un container en marche avec la commande ~docker exec
+<container> <command>~. Ceci démarrera un process /en plus/ de celui
+qui roule déjà dans le container. La seule condition est que le
+programme désiré soit disponible dans le container, donc qu'il fasse
+partie de son image. Docker-compose rend l'usage d'~exec~ légèrement
+plus convivial, avec sa commande correspondante. Voici par exemple
+comment utiliser ~redis-cli~, un outil de ligne de commande qui permet
+d'interagir avec Redis, et qui est disponible à même notre container
+~db~ :
+
+#+attr_latex: :options frame=single
+#+begin_src text
+$ docker-compose exec db redis-cli
+127.0.0.1:6379>
+127.0.0.1:6379>
+127.0.0.1:6379> keys *
+1) "some_key"
+127.0.0.1:6379> get some_key
+"123"
+#+end_src
+
+Cet exemple montre qu'il est facile et pratique d'examiner ou
+monitorer l'état de notre application de manière "live", à l'aide de
+nos outils habituels. Pour les images qui sont basées ultimement sur
+un système de type Linux (ce qu'il est possible de déterminer en
+suivant la chaine récursive de commandes ~FROM~, de ~Dockerfile~ en
+~Dockerfile~), il est également souvent possible de démarrer un
+shell :
+
+#+attr_latex: :options frame=single
+#+begin_src text
+$ docker-compose exec web bash
+root@d84bfe7aef1f:/app# ls -al
+total 24
+drwxrwxr-x 3 1000 1000 4096 Nov  3 17:14 .
+drwxr-xr-x 1 root root 4096 Nov  3 16:26 ..
+-rw-rw-r-- 1 1000 1000   41 Nov  1 19:48 Dockerfile
+drwxr-xr-x 2 root root 4096 Nov  3 17:14 __pycache__
+-rw-rw-r-- 1 1000 1000  244 Nov  3 16:26 docker-compose.yml
+-rw-rw-r-- 1 1000 1000  398 Nov  3 17:14 main.py
 #+end_src
