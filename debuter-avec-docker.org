@@ -240,7 +240,7 @@ changement soit effectif, on doit reconstruire l'image :
 $ docker build . -t hello
 #+end_src
 
-On peut ensuite l'exécuter :
+On peut ensuite tenter d'exécuter la nouvelle version :
 
 #+attr_latex: :options frame=single
 #+begin_src text
