@@ -7,52 +7,53 @@
 #+BEGIN_EXPORT latex
 \begin{titlepage}
 \begin{center}
-{\huge Petit précis de Docker \par}
+{\huge Débuter avec Docker \par}
 \vspace{1cm}
-{\Large Un manuel concis qui permet d'aller rapidement droit au but \par}
-\vspace{10cm}
+{\Large Un petit guide qui permet d'aller rapidement droit au but \par}
+\vspace{14cm}
 {\Large Christian Jauvin, Ouranos \par}
 \vspace{1cm}
-{\large Version alpha, le 4 novembre 2021 \par}
+{\large Version 0.1, le 9 novembre 2021 \par}
 \end{center}
 \end{titlepage}
 \tableofcontents
 \clearpage
 #+END_EXPORT
 
-* Le but de ce manuel
+* Introduction
 
-Ce manuel propose un chemin rapide et efficace pour comprendre ce
-qu'est Docker, ses concepts de base, et comment utiliser ses outils
-principaux de manière générale, sans entrer dans les plus fins
-détails. Pour ce faire, une série d'exemples simples mais logiquement
-reliés sont explorés de manière progressive.
+Ce guide propose un chemin rapide et efficace pour comprendre ce
+qu'est la technologie Docker, ses concepts de base, et comment
+utiliser certains de ses outils principaux. Le but est de favoriser la
+création d'un modèle mental robuste, et non de décrire exhaustivement
+les plus fins détails. Pour ce faire, nous allons tout d'abord
+répondre à quelques questions courantes, et explorer ensuite une série
+d'exemples, de manière progressive et cohérente.
 
 * Réponses à quelques questions courantes
 
 ** Qu'est-ce que c'est?
 
-Docker est un programme qui permet d'empaqueter ("packager") une
-application ainsi que la totalité de son environnement dans un fichier
-spécial appelé une *image*. Une fois que cette image est disponible,
-Docker permet d'exécuter une instance dynamique à partir de celle-ci,
-sous la forme d'un *container*. Un container constitue un
-environnement complètement isolé du système d'exploitation "hôte", qui
-exécute Docker, ainsi que des autres containers. Cette isolation
-s'applique également au disque et au réseau à priori, mais il est
-possible d'introduire des exceptions à l'aide de différents
-mécanismes, que nous allons explorer. Notons qu'il peut être utile de
-se représenter le concept d'image comme correspondant grosso modo à
-celui d'une /classe/ (au sens orienté-objet), et un container son
-/instance/.
+Docker est un programme qui permet de "packager" une application ainsi
+que la totalité de son environnement dans un fichier spécial appelé
+une *image*. Une fois que cette image est disponible, Docker permet de
+créer et exécuter une instance dynamique à partir de celle-ci, sous la
+forme d'un *container*. Un container constitue un environnement
+complètement isolé du système d'exploitation "hôte", qui exécute
+Docker, ainsi que des autres containers. Cette isolation s'applique
+également au disque et au réseau, mais il est possible d'introduire
+des exceptions à l'aide de différents mécanismes, que nous allons
+explorer. Notons qu'il peut être utile de se représenter le concept
+d'image comme correspondant grosso modo à celui d'une /classe/ (au
+sens orienté-objet), et un container son /instance/.
 
 ** En quoi ça diffère d'une VM?
 
 Bien que ce modèle ressemble en apparence à celui d'une machine
-virtuelle (VM), il est assez différent en substance : au lieu de faire
-l'émulation complète d'une machine physique, comme c'est le cas avec
-les VMs du genre VMWare ou VirtualBox, Docker partage plutôt le
-système d'exploitation hôte, en utilisant ses primitives de
+virtuelle (VM), il est assez différent : au lieu de faire l'émulation
+complète d'une machine physique, comme c'est le cas avec les VMs du
+genre VMWare ou VirtualBox, Docker partage plutôt le système
+d'exploitation hôte, en utilisant ses primitives de
 virtualisation. Cette différence fait en sorte que Docker est beaucoup
 moins gourmand en ressources qu'une VM, et permet donc de meilleures
 performances. Bien que Docker soit disponible pour toutes les
@@ -65,25 +66,25 @@ nécessaire.
 
 Une application moderne repose sur un assemblage impressionnant de
 composantes logicielles qu'il est pratiquement impossible de contrôler
-dans ses moindres détails : peut-être que votre environnement Conda
-contient exactement les mêmes versions des librairies Python que celui
-de votre collègue, il est possible qu'une différence subtile subsiste
-dans une des composantes se trouvant dans les profondeurs du système
+dans ses moindres détails : votre environnement Conda a beau contenir
+exactement les mêmes versions des librairies Python que celui de votre
+collègue, il est possible qu'une différence subtile subsiste dans une
+des composantes se trouvant dans les profondeurs du système
 d'exploitation, susceptible de causer des problèmes difficiles à
-diagnostiquer et résoudre. Docker permet de résoudre ce problème d'une
-manière assez radicale, en permettant de créer, reproduire et
-distribuer un environnement dans sa totalité, en sacrifiant un minimum
-de performance. La métaphore du container de transport maritime prend
+diagnostiquer. Docker permet de résoudre ce problème d'une manière
+assez radicale, en permettant de créer, reproduire et distribuer un
+environnement dans sa totalité, en sacrifiant un minimum de
+performance. La métaphore du container de transport maritime prend
 ainsi son sens, car il permet de résoudre un problème apparenté dans
 le monde physique : rendre plus robuste le transport des choses
 fragiles en les compartimentant.\\
 
-En pratique, Docker est pratique et puissant dans deux scénarios
+En pratique, Docker est pratique et utile dans deux scénarios
 distincts : quand une application complexe doit être déployée et gérée
 en production, et quand un développeur veut reproduire un
 environnement complexe (celui de production par exemple) localement,
-sans avoir à installer et gérer une multitude de composantes complexes
-sur le système hôte.
+sans avoir à gérer une multitude de composantes complexes sur le
+système hôte.
 
 ** De où ça vient?
 
@@ -156,11 +157,11 @@ démontre l'aspect modulaire et récursif de Docker.\\
 
 La commande ~COPY~ crée une copie de notre programme, qui correspond à
 son état au moment de la création de l'image, à l'emplacement désigné
-(~/inside_container~ est un répertoire qui n'existera que dans le
-container, quand il sera créé). ~WORKDIR~ spécifie le répertoire
-courant qui sera utilisé par la commande suivante ~ENTRYPOINT~, qui
-détermine la ligne de commande qui sera utilisée par défaut quand
-le container sera exécuté.
+(le répertoire ~/inside_container~ n'existera que dans le container,
+quand il sera créé). ~WORKDIR~ spécifie le répertoire courant qui sera
+utilisé par la commande suivante ~ENTRYPOINT~, qui détermine la ligne
+de commande qui sera utilisée par défaut quand le container sera
+exécuté.
 
 ** Créer une image : docker build
 
@@ -174,15 +175,16 @@ Sending build context to Docker daemon  3.072kB
 Step 1/4 : FROM python
  ---> cba42c28d9b8
 Step 2/4 : COPY say_hello.py /inside_container/
- ---> Using cache
- ---> c010445e0929
+ ---> 1857eaae8006
 Step 3/4 : WORKDIR /inside_container
- ---> Using cache
- ---> 4c84d350ca46
+ ---> Running in 82f776c710c1
+Removing intermediate container 82f776c710c1
+ ---> 1bb7d819208c
 Step 4/4 : ENTRYPOINT ["python", "say_hello.py"]
- ---> Using cache
- ---> 3bfd9d7c3faf
-Successfully built 3bfd9d7c3faf
+ ---> Running in 7721eec86a70
+Removing intermediate container 7721eec86a70
+ ---> 4f7eb5601e46
+Successfully built 4f7eb5601e46
 Successfully tagged hello:latest
 #+end_src
 
@@ -198,9 +200,9 @@ hello           latest    3bfd9d7c3faf   25 hours ago   886MB
 
 ** Créer et démarrer un container : docker run
 
-Une fois qu'une image existe, on peut en instancier un container à
-volonté. Étant donné que notre premier exemple est celui d'un
-programme en ligne de commande (CLI), le cycle de vie de notre
+Une fois qu'une image existe, on peut en instancier un (ou plusieurs)
+container à volonté. Étant donné que notre premier exemple est celui
+d'un programme en ligne de commande (CLI), le cycle de vie de notre
 container sera bref : il sera tout d'abord créé, sa commande (définie
 par le ~ENTRYPOINT~ dans le ~Dockerfile~) sera ensuite exécutée, pour
 être finalement stoppé. C'est ce que fait la commande ~docker run
@@ -228,6 +230,18 @@ name = sys.argv[1] if len(sys.argv) > 1 else 'Stranger'
 cowsay.cow(f'Hello {name}!')
 #+end_src
 
+Si on exécute la commande ~docker run~ de nouveau à ce point, rien
+n'aura changé, parce que nous n'avons modifié le fichier
+~say_hello.py~ que localement, et non dans l'image. Pour que le
+changement soit effectif, on doit reconstruire l'image :
+
+#+attr_latex: :options frame=single
+#+begin_src text
+$ docker build . -t hello
+#+end_src
+
+On peut ensuite l'exécuter :
+
 #+attr_latex: :options frame=single
 #+begin_src text
 $ docker run hello Ouranos
@@ -241,8 +255,8 @@ Cette erreur démontre que le container est un environnement
 complètement isolé, dont l'état dépend entièrement de l'image dont il
 provient. Étant donné nous n'avons pas installé de librairies
 supplémentaires au moment de la création de l'image, la librairie
-~cowsay~ est introuvable. Pour l'ajouter nous devons donc tout d'abord
-modifier le ~Dockerfile~ :
+~cowsay~ est introuvable. Pour l'ajouter nous devons donc modifier le
+~Dockerfile~ :
 
 #+caption: \texttt{util/Dockerfile.py}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
@@ -312,9 +326,9 @@ contre, la plupart des modifications impliquent seulement le code
 source, et il serait donc intéressant de ne pas avoir à payer le coût
 de la reconstruction de l'image à chaque fois. Docker permet à un
 container de partager un répertoire (sous la forme d'un *volume*) avec
-le système hôte avec le mécanisme de "bind mount". Pour le démontrer,
-modifions encore une fois notre programme, cette fois-ci d'une manière
-qui ne demande pas l'ajout d'une nouvelle librairie :
+le système hôte avec le mécanisme de "bind mount". Pour en faire
+l'essai, modifions encore une fois notre programme, cette fois-ci
+d'une manière qui ne demande pas l'ajout d'une nouvelle librairie :
 
 #+caption: \texttt{util/say\_hello.py}
 #+attr_latex: :placement [H] :options style=monokai, bgcolor=darkgray
@@ -330,11 +344,12 @@ wd = dt.datetime.today().strftime('%A')
 cowsay.cow(f'Hello {name}, today is {wd}!')
 #+end_src
 
-Sans volume partagé, cette modification ne pourrait pas avoir d'effet
-immédiat, car le fichier ~say_hello.py~ a seulement été modifié
-localement, sur l'hôte, et non à l'intérieur de l'image. Avec l'usage
-d'un volume partagé, cette modification devient néanmoins visible au
-container :
+Comme nous l'avons vu dans la section précédente, cette modification
+ne pourrait pas avoir d'effet immédiat, car le fichier ~say_hello.py~
+a seulement été modifié localement, sur l'hôte, et non dans
+l'image. Avec l'usage d'un volume partagé, cette modification devient
+néanmoins visible immédiatement au container, sans avoir besoin de
+reconstruire l'image :
 
 #+attr_latex: :options frame=single
 #+begin_src text
@@ -362,11 +377,11 @@ container.
 Nous allons maintenant décrire un scénario où nous voulons créer une
 application qui nécessite plusieurs containers. L'outil
 ~docker-compose~ permet de créer et orchestrer un groupe de containers
-de manière très puissante et conviviale, toujours avec la ligne de
-commande, à l'aide d'un seul fichier de configuration. Docker-compose
-ne remplace pas l'outil Docker tout court, il en enrichit seulement
-l'interface : tout ce que fait docker-compose pourrait être accompli
-avec Docker seulement.\\
+de manière très conviviale, toujours avec la ligne de commande, à
+l'aide d'un seul fichier de configuration. Docker-compose ne remplace
+pas l'outil Docker tout court, il en enrichit seulement l'interface :
+tout ce que fait docker-compose pourrait être accompli avec Docker
+seulement.\\
 
 Créons un nouveau répertoire de travail :
 
